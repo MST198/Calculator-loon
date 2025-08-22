@@ -6,9 +6,9 @@
 <title>DGA Loon & Dividend Optimalisatie</title>
 <style>
   body { font-family: Arial, sans-serif; background: #fcfcf9; max-width: 1200px; margin: auto; color: #254751; padding: 1rem;}
-  h1,h2 { color: #1e5d63; }
+  h1, h2 { color: #1e5d63; }
   label { font-weight: 600; }
-  .card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgb(0 0 0 / 0.1); }
+  .card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
   input[type=number] { width: 100%; padding: 0.4rem; font-size: 1rem; border-radius: 4px; border: 1px solid #ccd; box-sizing: border-box;}
   .flex-row { display: flex; gap: 1rem; flex-wrap: wrap; }
   .flex-item { flex: 1 1 220px; min-width: 180px; }
@@ -60,6 +60,7 @@
         <th>Jaar 2: Geoptimaliseerd</th>
         <th>Jaar 3: Geoptimaliseerd</th>
         <th>Verschil jaar 2 t.o.v. jaar 1</th>
+        <th>Totaal netto privé per maand</th>
       </tr>
     </thead>
     <tbody id="vergelijkingBody"></tbody>
@@ -142,18 +143,17 @@ function bereken() {
   // Tabel vullen
   const tbody = document.getElementById('vergelijkingBody');
   tbody.innerHTML = `
-    <tr><td class="label">Bruto jaarsalaris</td><td>${formatEuro(brutoJaarHuidig)}</td><td>${formatEuro(minimumLoonJaar)}</td><td>${formatEuro(minimumLoonJaar)}</td><td>${formatEuro(minimumLoonJaar-brutoJaarHuidig)}</td></tr>
-    <tr><td class="label">Bruto dividend (voorfinanciering netto gat)</td><td>–</td><td>${formatEuro(brutoDividendPerJaar)}</td><td>${formatEuro(brutoDividendPerJaar)}</td><td>–</td></tr>
-    <tr><td class="label"><strong>Totaal uit de BV per jaar (bruto loon + dividend)</strong></td><td><strong>${formatEuro(brutoJaarHuidig)}</strong></td><td><strong>${formatEuro(brutoJaarOptimaal)}</strong></td><td><strong>${formatEuro(brutoJaarOptimaal)}</strong></td><td><strong>${formatEuro(verschilBrutoJaar)}</strong></td></tr>
-    <tr><td class="label">Bruto maandsalaris</td><td>${formatEuro(brutoMaandHuidig)}</td><td>${formatEuro(brutoMaandOptimaal)}</td><td>${formatEuro(brutoMaandOptimaal)}</td><td>${formatEuro(brutoMaandOptimaal-brutoMaandHuidig)}</td></tr>
-    <tr><td class="label">Netto maandsalaris</td><td>${formatEuro(nettoMaandHuidig)}</td><td>${formatEuro(nettoMaandMinLoon)}</td><td>${formatEuro(nettoMaandMinLoon)}</td><td>${formatEuro(nettoMaandMinLoon-nettoMaandHuidig)}</td></tr>
-    <tr><td class="label">Netto jaarloon</td><td>${formatEuro(nettoJaarHuidig)}</td><td>${formatEuro(nettoJaarMinLoon)}</td><td>${formatEuro(nettoJaarMinLoon)}</td><td>${formatEuro(nettoJaarMinLoon-nettoJaarHuidig)}</td></tr>
-    <tr><td class="label">Netto dividend</td><td>–</td><td>${formatEuro(nettoDividendPerJaar)}</td><td>${formatEuro(nettoDividendPerJaar)}</td><td>–</td></tr>
-    <tr><td class="label"><strong>Totaal netto privé per jaar</strong></td><td><strong>${formatEuro(nettoJaarHuidig)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal)}</strong></td><td><strong>${formatEuro(verschilNettoJaar)}</strong></td></tr>
-    <tr><td class="label">Totale belastingdruk (jaarloon + dividend)</td><td>${formatEuro(belastingJaarHuidig)}</td><td>${formatEuro(belastingTotaalOptimaal)}</td><td>${formatEuro(belastingTotaalOptimaal)}</td><td>${formatEuro(belastingTotaalOptimaal - belastingJaarHuidig)}</td></tr>
+    <tr><td class="label">Bruto jaarsalaris</td><td>${formatEuro(brutoJaarHuidig)}</td><td>${formatEuro(minimumLoonJaar)}</td><td>${formatEuro(minimumLoonJaar)}</td><td>${formatEuro(minimumLoonJaar-brutoJaarHuidig)}</td><td>–</td></tr>
+    <tr><td class="label">Bruto dividend (voorfinanciering netto gat)</td><td>–</td><td>${formatEuro(brutoDividendPerJaar)}</td><td>${formatEuro(brutoDividendPerJaar)}</td><td>–</td><td>–</td></tr>
+    <tr><td class="label"><strong>Totaal uit de BV per jaar (bruto loon + dividend)</strong></td><td><strong>${formatEuro(brutoJaarHuidig)}</strong></td><td><strong>${formatEuro(brutoJaarOptimaal)}</strong></td><td><strong>${formatEuro(brutoJaarOptimaal)}</strong></td><td><strong>${formatEuro(verschilBrutoJaar)}</strong></td><td>–</td></tr>
+    <tr><td class="label">Bruto maandsalaris</td><td>${formatEuro(brutoMaandHuidig)}</td><td>${formatEuro(brutoMaandOptimaal)}</td><td>${formatEuro(brutoMaandOptimaal)}</td><td>${formatEuro(brutoMaandOptimaal-brutoMaandHuidig)}</td><td>–</td></tr>
+    <tr><td class="label">Netto maandsalaris</td><td>${formatEuro(nettoMaandHuidig)}</td><td>${formatEuro(nettoMaandMinLoon)}</td><td>${formatEuro(nettoMaandMinLoon)}</td><td>${formatEuro(nettoMaandMinLoon-nettoMaandHuidig)}</td><td>–</td></tr>
+    <tr><td class="label">Netto jaarloon</td><td>${formatEuro(nettoJaarHuidig)}</td><td>${formatEuro(nettoJaarMinLoon)}</td><td>${formatEuro(nettoJaarMinLoon)}</td><td>${formatEuro(nettoJaarMinLoon-nettoJaarHuidig)}</td><td>–</td></tr>
+    <tr><td class="label">Netto dividend</td><td>–</td><td>${formatEuro(nettoDividendPerJaar)}</td><td>${formatEuro(nettoDividendPerJaar)}</td><td>–</td><td>–</td></tr>
+    <tr><td class="label"><strong>Totaal netto privé per jaar</strong></td><td><strong>${formatEuro(nettoJaarHuidig)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal)}</strong></td><td><strong>${formatEuro(verschilNettoJaar)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal / 12)}</strong></td></tr>
   `;
-
-  // Grafieken
+  
+  // Grafieken updaten
   updateCharts(brutoJaarHuidig, brutoJaarOptimaal, nettoMaandHuidig, nettoMaandMinLoon, nettoDividendPerMaand);
 }
 
