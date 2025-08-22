@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DGA Loon & Dividend Calculator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 980px;
+    margin: 1rem auto;
+    padding: 1rem;
+    background: #fdfcf9;
+    color: #1f2121;
+  }
+  h1, h2 {
+    color: #215d63;
+  }
+  label {
+    display: block;
+    margin-top: 0.75rem;
+    font-weight: 600;
+  }
+  input[type=number] {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin: 0.3rem 0 1rem;
+    box-sizing: border-box;
+  }
+  .flex-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .flex-item {
+    flex: 1 1 200px;
+  }
+  .card {
+    background: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+  }
+  .results span {
+    font-weight: bold;
+  }
+  canvas {
+    max-width: 100%;
+  }
+  .footer {
+    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: #777;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>DGA Loon & Dividend Calculator</h1>
+  <p>Vergelijk salaris en dividenduitkeringen voor optimale netto opbrengst.</p>
+
+  <div class="card">
+    <h2>Invoer Gegevens</h2>
+    <div class="flex-row">
+      <div class="flex-item">
+        <label for="brutoSalaris">Bruto Maandsalaris (€):</label>
+        <input type="number" id="brutoSalaris" value="6000" min="0" step="50" />
+      </div>
+      <div class="flex-item">
+        <label for="vakantiegeldJaar">Vakantiegeld per jaar (€):</label>
+        <input type="number" id="vakantiegeldJaar" value="2800" min="0" step="50" />
+      </div>
+      <div class="flex-item">
+        <label for="nettoSalaris">Netto Maandsalaris (€):</label>
+        <input type="number" id="nettoSalaris" value="3824.74" min="0" step="0.01" readonly />
+      </div>
+    </div>
+    <div class="flex-row">
+      <div class="flex-item">
+        <label for="nieuwJaarSalaris">Nieuw Jaarlijks brutoloon (€):</label>
+        <input type="number" id="nieuwJaarSalaris" value="56000" min="0" step="100" />
+      </div>
+      <div class="flex-item">
+        <label for="totaalUitkering">Totaal jaarlijks uit te keren (€):</label>
+        <input type="number" id="totaalUitkering" value="78000" min="0" step="100" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card results">
+    <h2>Resultaten</h2>
+    <p>Huidige situatie netto jaarinkomen incl. vakantiegeld: <span id="huidigNettoJaar">-</span> €</p>
+    <p>Nieuw netto jaarsalaris: <span id="nieuwNettoLoon">-</span> €</p>
+    <p>Dividend bruto nieuw jaar: <span id="nieuwDividendBruto">-</span> €</p>
+    <p>Dividend netto nieuw jaar: <span id="nieuwDividendNetto">-</span> €</p>
+    <p>Totaal netto nieuw jaarinkomen: <span id="nieuwNettoTotaal">-</span> €</p>
+    <p>Verschil netto nieuw jaar t.o.v. huidig jaar: <span id="verschilNettoJaar">-</span> €</p>
+    <p>Verschil netto per maand: <span id="verschilNettoMaand">-</span> €</p>
+    <p>Benodigd dividend einde huidig jaar om netto aan te vullen: <span id="benodigdDividendBruto">-</span> €</p>
+  </div>
+
+  <div class="card">
+    <h2>Grafieken</h2>
+    <canvas id="stapelChart" height="180"></canvas>
+    <canvas id="maandLoonChart" height="180" style="margin-top: 30px;"></canvas>
+    <canvas id="belastingdrukChart" height="150" style="margin-top: 30px;"></canvas>
+    <canvas id="cumulatiefChart" height="180" style="margin-top: 30px;"></canvas>
+  </div>
+
+<script>
+  (() => {
+    // Belastingtarieven 2025
+    const box1Tarief = 0.3697; // Loonbelasting gemiddeld
+    const box2Tarief = 0.269;  // Dividendbelasting
+
+    // DOM elementen
+    const brutoSalarisInput = document.getElementById('brutoSalaris');
+    const vakantiegeldJaarInput = document.getElementById('vakantiegeldJaar');
+    const nettoSalarisInput = document.getElementById('nettoSalaris');
+    const nieuwJaarSalarisInput = document.getElementById('nieuwJaarSalaris');
+    const totaalUitkeringInput = document.getElementById('totaalUitkering');
+
+    const huidigNettoJaarEl = document.getElementById('huidigNettoJaar');
+    const nieuwNettoLoonEl = document.getElementById('nieuwNettoLoon');
+    const nieuwDividendBrutoEl = document.getElementById('nieuwDividendBruto');
+    const nieuwDividendNettoEl = document.getElementDividendNetto');
+    const nieuwNettoTotaalEl = document.getElementById('nieuwNettoTotaal');
+    const verschilNettoJaarEl = document.getElementById('verschilNettoJaar');
+    const verschilNettoMaandEl = document.getElementById('verschilNettoMaand');
+    const benodigdDividendBrutoEl = document.getElementById('benodigdDividendBruto');
+
+    // Charts
+    let stapelChart = null;
+    let maandLoonChart = null;
+    let belastingdrukChart = null;
+    let cumulatiefChart = null;
+
+    // Functie voor netto berekening van bruto loon
+    // Simpele schatting: netto = bruto * (1 - box1Tarief)
+    const brutoNaarNetto = (bruto) => +(bruto * (1 - box1Tarief)).toFixed(2);
+    const nettoNaarBruto = (netto) => +(netto / (1 - box1Tarief)).toFixed(2);
+
+    // Functie format euro
+    const formatEuro = (val) => val.toLocaleString('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+
+    function berekenEnUpdate() {
+      // Input waarden
+      const brutoSalaris = parseFloat(brutoSalarisInput.value) || 0;
+      const vakantiegeldJaar = parseFloat(vakantiegeldJaarInput.value) || 0;
+      const nettoSalaris = brutoNaarNetto(brutoSalaris);
+      nettoSalarisInput.value = nettoSalaris;
+
+      const nieuwJaarSalaris = parseFloat(nieuwJaarSalarisInput.value) || 0;
+      const totaalUitkering = parseFloat(totaalUitkeringInput.value) || 0;
+      const nieuwDividendBruto = Math.max(0, totaalUitkering - nieuwJaarSalaris);
+
+      // Huidig netto jaarinkomen inclusief vakantiegeld
+      const huidigNettoJaar = (nettoSalaris * 12) + (vakantiegeldJaar * (1 - 0.2));
+
+      // Nieuw netto loon en dividend netto
+      const nieuwNettoLoon = nieuwJaarSalaris * (1 - box1Tarief);
+      const nieuwDividendNetto = nieuwDividendBruto * (1 - box2Tarief);
+      const nieuwNettoTotaal = nieuwNettoLoon + nieuwDividendNetto;
+
+      const verschilNettoJaar = nieuwNettoTotaal - huidigNettoJaar;
+      const verschilNettoMaand = verschilNettoJaar / 12;
+
+      // Benodigd dividend einde huidig jaar om netto aan te vullen
+      // Tekort netto = nieuw netto loon - huidig netto loon; compensatie in dividend bruto:
+      const nettoTekort = Math.max(0, nieuwNettoLoon - (nettoSalaris * 12));
+      const benodigdDividendBruto = nettoTekort > 0 ? +(nettoTekort / (1 - box2Tarief)).toFixed(2) : 0;
+
+      // Update tekst
+      huidigNettoJaarEl.textContent = formatEuro(huidigNettoJaar);
+      nieuwNettoLoonEl.textContent = formatEuro(nieuwNettoLoon);
+      nieuwDividendBrutoEl.textContent = formatEuro(nieuwDividendBruto);
+      nieuwDividendNettoEl.textContent = formatEuro(nieuwDividendNetto);
+      nieuwNettoTotaalEl.textContent = formatEuro(nieuwNettoTotaal);
+      verschilNettoJaarEl.textContent = formatEuro(verschilNettoJaar);
+      verschilNettoMaandEl.textContent = formatEuro(verschilNettoMaand);
+      benodigdDividendBrutoEl.textContent = formatEuro(benodigdDividendBruto);
+
+      // Grafieken update
+      updateCharts(brutoSalaris, nieuwJaarSalaris, nieuwDividendBruto, huidigNettoJaar, nieuwNettoTotaal);
+    }
+
+    function updateCharts(brutoSalaris, nieuwJaarSalaris, nieuwDividendBruto, huidigNettoJaar, nieuwNettoTotaal) {
+      // Stapel chart: bruto en netto verdeling huidig en nieuw
+      const brutoHuidigJaar = brutoSalaris * 12;
+      const brutoNieuwJaar = nieuwJaarSalaris + nieuwDividendBruto;
+      const nettoHuidigJaar = huidigNettoJaar;
+      const nettoNieuwJaar = nieuwNettoTotaal;
+
+      if (stapelChart) stapelChart.destroy();
+      stapelChart = new Chart(document.getElementById('stapelChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Huidig jaar', 'Nieuw jaar'],
+          datasets: [
+            {
+              label: 'Bruto totaal',
+              data: [brutoHuidigJaar, brutoNieuwJaar],
+              backgroundColor: 'rgba(33, 128, 141, 0.6)'
+            },
+            {
+              label: 'Netto totaal',
+              data: [nettoHuidigJaar, nettoNieuwJaar],
+              backgroundColor: 'rgba(230, 129, 97, 0.7)'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: val => '€' + val.toLocaleString() }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Bruto en Netto jaarverdeling' }
+          }
+        }
+      });
+
+      // Netto inkomen per maand lijngrafiek
+      if (maandLoonChart) maandLoonChart.destroy();
+      const maanden = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+      // Huidig Maand net:
+      const huidigNettoMaand = (brutoSalaris * (1 - box1Tarief));
+      const huidigVakantiegeldMaand = vakantiegeldJaarInput.value / 12 || 0;
+
+      // Nieuw Maand netto (loon)
+      const nieuwNettoMaand = (nieuwJaarSalaris * (1 - box1Tarief)) / 12;
+      // Nu neem je dividend jaarlijkse uitkering apart
+      const dividendMaandBedrag = 0; // dividend geen maandelijkse uitkering, alleen bij jaaruitkering
+
+      const huidigMaandNettoData = Array(12).fill(huidigNettoMaand + (vakantiegeldJaarInput.value / 12 * (1 - 0.2) || 0 / 12));
+      const nieuwMaandNettoData = Array(11).fill(nieuwNettoMaand);
+      nieuwMaandNettoData.push(nieuwNettoMaand + nieuwDividendBruto * (1 - box2Tarief));
+
+      maandLoonChart = new Chart(document.getElementById('maandLoonChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: maanden,
+          datasets: [
+            {
+              label: 'Huidig netto per maand',
+              data: huidigMaandNettoData,
+              borderColor: 'rgba(33, 128, 141, 0.8)',
+              backgroundColor: 'rgba(33, 128, 141, 0.3)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Nieuw netto per maand',
+              data: nieuwMaandNettoData,
+              borderColor: 'rgba(230, 129, 97, 0.8)',
+              backgroundColor: 'rgba(230, 129, 97, 0.3)',
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true },
+            title: { display: true, text: 'Netto inkomen per maand' }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: { callback: val => '€' + val.toLocaleString() }
+            }
+          }
+        }
+      });
+
+      // Belastingdruk bar chart
+      if (belastingdrukChart) belastingdrukChart.destroy();
+      belastingdrukChart = new Chart(document.getElementById('belastingdrukChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Box 1 (loon)', 'Box 2 (dividend)'],
+          datasets: [{
+            label: 'Belastingtarief',
+            data: [box1Tarief * 100, box2Tarief * 100],
+            backgroundColor: ['rgba(33, 128, 141, 0.7)', 'rgba(230, 129, 97, 0.7)']
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: {
+              max: 100,
+              ticks: { callback: val => val + '%' }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Belastingtarieven 2025' }
+          }
+        }
+      });
+
+      // Cumulatief netto inkomen per maand
+      if (cumulatiefChart) cumulatiefChart.destroy();
+      const huidigCumulatief = huidigMaandNettoData.reduce((acc,val,i) => {
+        acc.push((acc.length ? acc[acc.length-1] : 0) + val);
+        return acc;
+      }, []);
+
+      const nieuwCumulatief = nieuwMaandNettoData.reduce((acc,val,i) => {
+        acc.push((acc.length ? acc[acc.length-1] : 0) + val);
+        return acc;
+      }, []);
+      
+      cumulatiefChart = new Chart(document.getElementById('cumulatiefChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: maanden,
+          datasets: [
+            {
+              label: 'Huidig cumulatief netto',
+              data: huidigCumulatief,
+              borderColor: 'rgba(33, 128, 141, 0.8)',
+              backgroundColor: 'rgba(33, 128, 141, 0.15)',
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: 'Nieuw cumulatief netto',
+              data: nieuwCumulatief,
+              borderColor: 'rgba(230, 129, 97, 0.8)',
+              backgroundColor: 'rgba(230, 129, 97, 0.15)',
+              fill: false,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true },
+            title: { display: true, text: 'Cumulatief netto inkomen per maand' }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: val => '€' + val.toLocaleString() }
+            }
+          }
+        }
+      });
+    }
+
+    // Event listeners
+    brutoSalarisInput.addEventListener('input', () => {
+      // Update netto salaris automatisch
+      const bruto = parseFloat(brutoSalarisInput.value);
+      if (!isNaN(bruto) && bruto >= 0) {
+        const nettoCalc = brutoNaarNetto(bruto);
+        nettoSalarisInput.value = nettoCalc;
+      } else {
+        nettoSalarisInput.value = '';
+      }
+      berekenEnUpdate();
+    });
+    vakantiegeldJaarInput.addEventListener('input', berekenEnUpdate);
+    nieuwJaarSalarisInput.addEventListener('input', berekenEnUpdate);
+    totaalUitkeringInput.addEventListener('input', berekenEnUpdate);
+
+    // Initiële berekening
+    berekenEnUpdate();
+
+  })();
+</script>
+
+<div class="footer">
+  &copy; 2025 DGA Calculator - Geoptimaliseerd voor Nederland
+</div>
+</body>
+</html>
