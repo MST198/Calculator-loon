@@ -152,7 +152,7 @@ function bereken() {
     <tr><td class="label">Netto dividend</td><td>–</td><td>${formatEuro(nettoDividendPerJaar)}</td><td>${formatEuro(nettoDividendPerJaar)}</td><td>–</td><td>–</td></tr>
     <tr><td class="label"><strong>Totaal netto privé per jaar</strong></td><td><strong>${formatEuro(nettoJaarHuidig)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal)}</strong></td><td><strong>${formatEuro(verschilNettoJaar)}</strong></td><td><strong>${formatEuro(nettoJaarOptimaal / 12)}</strong></td></tr>
   `;
-  
+
   // Grafieken updaten
   updateCharts(brutoJaarHuidig, brutoJaarOptimaal, nettoMaandHuidig, nettoMaandMinLoon, nettoDividendPerMaand);
 }
@@ -273,6 +273,7 @@ function updateCharts(brutoJaar1, brutoJaar2, nettoMaand1, nettoMaandLoonOptimaa
 }
 
 document.querySelectorAll('input[type=number]').forEach(input => input.addEventListener('input', bereken));
+vakantiegeldInput.addEventListener('input', bereken);
 window.onload = bereken;
 </script>
 
