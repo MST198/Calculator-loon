@@ -125,7 +125,7 @@
     const huidigNettoJaarEl = document.getElementById('huidigNettoJaar');
     const nieuwNettoLoonEl = document.getElementById('nieuwNettoLoon');
     const nieuwDividendBrutoEl = document.getElementById('nieuwDividendBruto');
-    const nieuwDividendNettoEl = document.getElementDividendNetto');
+    const nieuwDividendNettoEl = document.getElementById('nieuwDividendNetto');
     const nieuwNettoTotaalEl = document.getElementById('nieuwNettoTotaal');
     const verschilNettoJaarEl = document.getElementById('verschilNettoJaar');
     const verschilNettoMaandEl = document.getElementById('verschilNettoMaand');
@@ -229,17 +229,14 @@
       // Netto inkomen per maand lijngrafiek
       if (maandLoonChart) maandLoonChart.destroy();
       const maanden = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
-      // Huidig Maand net:
-      const huidigNettoMaand = (brutoSalaris * (1 - box1Tarief));
+
+      const huidigNettoMaand = brutoNaarNetto(brutoSalaris);
       const huidigVakantiegeldMaand = vakantiegeldJaarInput.value / 12 || 0;
+      const huidigMaandNettoData = Array(12).fill(huidigNettoMaand + huidigVakantiegeldMaand * (1 - 0.2));
 
-      // Nieuw Maand netto (loon)
       const nieuwNettoMaand = (nieuwJaarSalaris * (1 - box1Tarief)) / 12;
-      // Nu neem je dividend jaarlijkse uitkering apart
-      const dividendMaandBedrag = 0; // dividend geen maandelijkse uitkering, alleen bij jaaruitkering
-
-      const huidigMaandNettoData = Array(12).fill(huidigNettoMaand + (vakantiegeldJaarInput.value / 12 * (1 - 0.2) || 0 / 12));
       const nieuwMaandNettoData = Array(11).fill(nieuwNettoMaand);
+      // Dividend jaarlijks aan het einde van het jaar
       nieuwMaandNettoData.push(nieuwNettoMaand + nieuwDividendBruto * (1 - box2Tarief));
 
       maandLoonChart = new Chart(document.getElementById('maandLoonChart').getContext('2d'), {
@@ -309,16 +306,15 @@
 
       // Cumulatief netto inkomen per maand
       if (cumulatiefChart) cumulatiefChart.destroy();
-      const huidigCumulatief = huidigMaandNettoData.reduce((acc,val,i) => {
-        acc.push((acc.length ? acc[acc.length-1] : 0) + val);
-        return acc;
-      }, []);
 
-      const nieuwCumulatief = nieuwMaandNettoData.reduce((acc,val,i) => {
-        acc.push((acc.length ? acc[acc.length-1] : 0) + val);
-        return acc;
-      }, []);
-      
+      function cumulatief(array) {
+        let result = [];
+        array.reduce((a, b, i) => result[i] = a + b, 0);
+        return result;
+      }
+      const huidigCumulatief = cumulatief(huidigMaandNettoData);
+      const nieuwCumulatief = cumulatief(nieuwMaandNettoData);
+
       cumulatiefChart = new Chart(document.getElementById('cumulatiefChart').getContext('2d'), {
         type: 'line',
         data: {
@@ -360,7 +356,6 @@
 
     // Event listeners
     brutoSalarisInput.addEventListener('input', () => {
-      // Update netto salaris automatisch
       const bruto = parseFloat(brutoSalarisInput.value);
       if (!isNaN(bruto) && bruto >= 0) {
         const nettoCalc = brutoNaarNetto(bruto);
